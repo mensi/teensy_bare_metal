@@ -1,0 +1,106 @@
+#
+# This Makefile is intended to be used in the following layout
+#
+# /foo/common/Makefile [THIS FILE]
+# /foo/common/bar.c
+# /foo/src/project1/Makefile -> ../../common/Makefile [SYMLINK]
+# /foo/src/project1/main.c
+#
+# It will compile c files in common and in the project specific
+# directory and link everything together.
+#
+
+
+# Project name, just use the directry name we're in
+PROJECT_NAME = $(notdir $(CURDIR))
+
+# Build directory, where we put .o etc.
+BUILDDIR = $(abspath $(CURDIR)/build)
+
+# Directory with teensy_loader_cli
+LOADERPATH = $(abspath $(CURDIR)/../../teensy_loader_cli)
+
+# Common directory
+COMMONDIR =  $(abspath $(CURDIR)/../../common)
+
+# Path to he arm-none-eabi compiler
+COMPILERPATH = /usr/bin
+
+# Check whether we have a local config.h. If so, -imacros it first so it can override common/config.h
+ifneq ("$(wildcard $(CURDIR)/config.h)","")
+  CONFIG_INCLUDE = -imacros config.h
+else
+  CONFIG_INCLUDE =
+endif
+
+# Compiler flags
+# We'll use the Thumb instruction set and no stdlib
+CFLAGS = -Wall -Os -mthumb -ffunction-sections -fdata-sections -nostdlib -MMD $(CONFIG_INCLUDE) -I$(COMMONDIR)
+
+# linker options
+LDFLAGS = -Os -Wl,--gc-sections -Wl,-Map=$(BUILDDIR)/ld.map -mthumb
+
+# additional libraries to link
+LIBS = -lm
+
+# MCU specific options
+CFLAGS += -D__MK20DX256__ -mcpu=cortex-m4
+LDSCRIPT = $(COMMONDIR)/mk20dx256.ld
+LDFLAGS += -mcpu=cortex-m4 -T$(LDSCRIPT)
+MCU = mk20dx256
+
+# Different GCC binaries
+CC = $(abspath $(COMPILERPATH))/arm-none-eabi-gcc
+OBJCOPY = $(abspath $(COMPILERPATH))/arm-none-eabi-objcopy
+SIZE = $(abspath $(COMPILERPATH))/arm-none-eabi-size
+
+# Get c files
+SRC_FILES := $(wildcard $(CURDIR)/*.c)
+COMMON_FILES := $(wildcard $(COMMONDIR)/*.c)
+
+# Transform c sources to object files in the build dir
+COMMON_OBJS := $(foreach obj,$(notdir $(COMMON_FILES:.c=.o)), $(BUILDDIR)/common/$(obj))
+SRC_OBJS := $(foreach obj,$(notdir $(SRC_FILES:.c=.o)), $(BUILDDIR)/src/$(obj))
+
+all: hex
+
+build: $(BUILDDIR)/$(PROJECT_NAME).elf
+
+hex: $(BUILDDIR)/$(PROJECT_NAME).hex
+
+load: $(BUILDDIR)/$(PROJECT_NAME).hex $(LOADERPATH)/teensy_loader_cli
+	@echo "Running teensy_loader_cli. Press the button on the teensy to load the new code"
+	@$(LOADERPATH)/teensy_loader_cli --mcu=$(MCU) -w $<
+
+$(LOADERPATH)/teensy_loader_cli:
+	@echo "Making teensy_loader_cli"
+	$(MAKE) -C $(LOADERPATH)
+
+$(BUILDDIR)/common/%.o: $(COMMONDIR)/%.c
+	@echo "[CC] \t$<"
+	@mkdir -p "$(dir $@)"
+	@$(CC) $(CFLAGS) -o "$@" -c "$<"
+
+$(BUILDDIR)/src/%.o: $(CURDIR)/%.c
+	@echo "[CC] \t$<"
+	@mkdir -p "$(dir $@)"
+	@$(CC) $(CFLAGS) -o "$@" -c "$<"
+
+
+$(BUILDDIR)/$(PROJECT_NAME).elf: $(SRC_OBJS) $(COMMON_OBJS) $(LDSCRIPT)
+	@echo "[LD] \t$@"
+	@$(CC) $(LDFLAGS) $(LIBS) -o "$@" $(SRC_OBJS) $(COMMON_OBJS)
+
+$(BUILDDIR)/%.hex: $(BUILDDIR)/%.elf
+	@echo "[HEX] \t$@"
+	@$(SIZE) "$<"
+	@$(OBJCOPY) -O ihex -R .eeprom "$<" "$@"
+
+# compiler generated dependency info
+-include $(OBJS:.o=.d)
+
+clean:
+	@echo Cleaning...
+	@rm -rf "$(BUILDDIR)"
+
+.PHONY: all build hex load clean
