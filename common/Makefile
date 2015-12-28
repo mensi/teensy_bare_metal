@@ -62,7 +62,12 @@ COMMON_FILES := $(wildcard $(COMMONDIR)/*.c)
 COMMON_OBJS := $(foreach obj,$(notdir $(COMMON_FILES:.c=.o)), $(BUILDDIR)/common/$(obj))
 SRC_OBJS := $(foreach obj,$(notdir $(SRC_FILES:.c=.o)), $(BUILDDIR)/src/$(obj))
 
+# Get files in common that are generated from *.py
+GEN_COMMON_FILES := $(basename $(wildcard $(COMMONDIR)/*.py))
+
 all: hex
+
+generated: $(GEN_COMMON_FILES)
 
 build: $(BUILDDIR)/$(PROJECT_NAME).elf
 
@@ -76,12 +81,16 @@ $(LOADERPATH)/teensy_loader_cli:
 	@echo "Making teensy_loader_cli"
 	$(MAKE) -C $(LOADERPATH)
 
-$(BUILDDIR)/common/%.o: $(COMMONDIR)/%.c
+$(COMMONDIR)/%: $(COMMONDIR)/%.py
+	@echo "[PY] \t$<"
+	@python "$<" > "$@"
+
+$(BUILDDIR)/common/%.o: $(COMMONDIR)/%.c $(GEN_COMMON_FILES)
 	@echo "[CC] \t$<"
 	@mkdir -p "$(dir $@)"
 	@$(CC) $(CFLAGS) -o "$@" -c "$<"
 
-$(BUILDDIR)/src/%.o: $(CURDIR)/%.c
+$(BUILDDIR)/src/%.o: $(CURDIR)/%.c $(GEN_COMMON_FILES)
 	@echo "[CC] \t$<"
 	@mkdir -p "$(dir $@)"
 	@$(CC) $(CFLAGS) -o "$@" -c "$<"
@@ -103,4 +112,4 @@ clean:
 	@echo Cleaning...
 	@rm -rf "$(BUILDDIR)"
 
-.PHONY: all build hex load clean
+.PHONY: all build hex load clean generated
