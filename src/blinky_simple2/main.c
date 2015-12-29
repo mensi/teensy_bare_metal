@@ -1,5 +1,6 @@
 #include "mk20dx256.h"
 #include "pins.h"
+#include "uart.h"
 
 // Pin 13 has the onboard LED
 #define BLINK_PIN 13
@@ -25,7 +26,13 @@ void delay(unsigned int duration) {
 }
 
 int main(void) {
-  // Pin 13 has the onboard LED
+  // We'll use UART0, so set it up
+  PIN0_PORT_PCR = PORT_PCR_MUX(3);
+  PIN1_PORT_PCR = PORT_PCR_MUX(3);
+  uart_setup(UART0_BASE_PTR, 115200);
+
+  uart_putline(UART0_BASE_PTR, "\r\nHello there!");
+
   // Set direction to output
   PIN_GPIO_PDDR( BLINK_PIN ) = (1 << PIN_PIN( BLINK_PIN ));
 
@@ -34,8 +41,10 @@ int main(void) {
 
   while (1) {
     pin_gpio_set_high(BLINK_PIN);
+    uart_putchar(UART0_BASE_PTR, 'H');
     delay(500);
     pin_gpio_set_low(BLINK_PIN);
+    uart_putchar(UART0_BASE_PTR, 'L');
     delay(500);
   }
 }
