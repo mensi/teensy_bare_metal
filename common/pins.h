@@ -6,7 +6,9 @@
  * -------------------------------------------------
  * 
  * This file contains macros to access I/O pins based on their numbering according to the teensy
- * pinout schema. Register aliases:
+ * pinout schema (https://www.pjrc.com/teensy/pinout.html).
+ * 
+ * Register aliases:
  * 
  * - PINx_BANK
  *    The bank the pin maps to
