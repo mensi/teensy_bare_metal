@@ -35,7 +35,7 @@ endif
 
 # Compiler flags
 # We'll use the Thumb instruction set and no stdlib
-CFLAGS = -Wall -Os -mthumb -ffunction-sections -fdata-sections -nostdlib -MMD $(CONFIG_INCLUDE) -I$(COMMONDIR)
+CFLAGS = -Wall -Os -mthumb -ffunction-sections -fdata-sections -fstack-usage -nostdlib -MMD $(CONFIG_INCLUDE) -I$(COMMONDIR)
 
 # linker options
 LDFLAGS = -Os -Wl,--gc-sections -Wl,-Map=$(BUILDDIR)/ld.map -mthumb
@@ -53,6 +53,9 @@ MCU = mk20dx256
 CC = $(abspath $(COMPILERPATH))/arm-none-eabi-gcc
 OBJCOPY = $(abspath $(COMPILERPATH))/arm-none-eabi-objcopy
 SIZE = $(abspath $(COMPILERPATH))/arm-none-eabi-size
+
+# cflow options
+CFLOWFLAGS = --cpp='$(CC) $(CFLAGS) -E' --omit-arguments
 
 # Get c files
 SRC_FILES := $(wildcard $(CURDIR)/*.c)
@@ -104,6 +107,10 @@ $(BUILDDIR)/%.hex: $(BUILDDIR)/%.elf
 	@echo "[HEX] \t$@"
 	@$(SIZE) "$<"
 	@$(OBJCOPY) -O ihex -R .eeprom "$<" "$@"
+
+$(BUILDDIR)/$(PROJECT_NAME).cflow: $(SRC_FILES) $(COMMON_FILES) $(GEN_COMMON_FILES)
+	@echo "[CFLOW] \t$@"
+	@cflow -o$@ $(CFLOWFLAGS) $(SRC_FILES) $(COMMON_FILES) 2> /dev/null
 
 # compiler generated dependency info
 -include $(OBJS:.o=.d)
