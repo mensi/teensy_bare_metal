@@ -1,12 +1,18 @@
-#include "config.h"
 #include "delay.h"
+#include "systick.h"
 
-inline void delay_us(unsigned int microseconds) {
-  delay_us(microseconds);
-}
+/*
+ * Reads the number of elapsed milliseconds from systick
+ */
+void delay_ms_systick(unsigned int milliseconds) {
+  unsigned int cur = systick_get_ms();
+  unsigned int end = cur + milliseconds;
 
-inline void delay_ms(unsigned int milliseconds) {
-  delay_ms(milliseconds);
+  // Handle sum overflow
+  if (end < cur) while (systick_get_ms() > cur);
+
+  // Normal case
+  while (systick_get_ms() < end);
 }
 
 /*
@@ -46,4 +52,3 @@ void delay_ms_simple(unsigned int milliseconds) {
     }
   }
 }
-

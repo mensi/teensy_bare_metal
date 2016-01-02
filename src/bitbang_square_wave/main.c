@@ -13,8 +13,8 @@ int main(void) {
 
   while(1) {
     pin_gpio_set_high(OUTPUT_PIN);
-    delay_ms_simple(1);
+    delay_ms(1);
     pin_gpio_set_low(OUTPUT_PIN);
-    delay_ms_simple(2);
+    delay_ms(2);
   }
 }

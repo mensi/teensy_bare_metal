@@ -8,6 +8,7 @@
 #include "config.h"
 #include "interrupt.h"
 #include "interrupt_weak_isr.h"
+#include "systick.h"
 #include "watchdog.h"
 #include "mk20dx256.h"
 
@@ -349,6 +350,16 @@ void __startup(void) {
 
   // TODO: Relocate interrupt vector to RAM for speed?
 
+
+  // Init systick?
+#if ENABLE_SYSTICK_HANDLER
+  systick_init();
+#endif
+
+  // Enable interrupts before entering main?
+#if ENABLE_INTERRUPTS_ON_STARTUP
+  interrupt_enable();
+#endif
 
   // After everthing is done, call main
   main(); 
