@@ -1,5 +1,6 @@
 #include "mk20dx256.h"
 #include "pins.h"
+#include "interrupt.h"
 #include "uart.h"
 
 // Pin 13 has the onboard LED
@@ -25,6 +26,10 @@ void delay(unsigned int duration) {
   }
 }
 
+void isr_systick(void) {
+  uart_putchar(UART0_BASE_PTR, '.');
+}
+
 int main(void) {
   // We'll use UART0, so set it up
   PIN0_PORT_PCR = PORT_PCR_MUX(3);
@@ -38,6 +43,11 @@ int main(void) {
 
   // Select the GPIO function on the port
   PIN_PORT_PCR( BLINK_PIN ) = PORT_PCR_MUX(1) | PORT_PCR_SRE_MASK | PORT_PCR_DSE_MASK;
+
+  // Let's also systick!
+  interrupt_enable();
+  SYST_RVR = 7200000;//(SYST_CALIB & SysTick_CALIB_TENMS_MASK) * 10;
+  SYST_CSR = SysTick_CSR_ENABLE_MASK | SysTick_CSR_TICKINT_MASK | SysTick_CSR_CLKSOURCE_MASK;
 
   while (1) {
     pin_gpio_set_high(BLINK_PIN);
