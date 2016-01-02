@@ -1,3 +1,4 @@
+#define _INTERRUPT_TABLE_SETUP_
 /*
  * This file contains everything necessary to boot and jump to main()
  * 
@@ -6,6 +7,7 @@
 
 #include "config.h"
 #include "interrupt.h"
+#include "interrupt_weak_isr.h"
 #include "watchdog.h"
 #include "mk20dx256.h"
 

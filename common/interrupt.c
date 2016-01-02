@@ -1,7 +1,9 @@
 #include "interrupt.h"
 
-void isr_ignore(void) {
+void isr_panic() {
+
+  while (1);
 }
 
-void isr_panic(void) {
+void isr_ignore() {
 }
