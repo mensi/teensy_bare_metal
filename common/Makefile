@@ -24,7 +24,13 @@ LOADERPATH = $(abspath $(CURDIR)/../../teensy_loader_cli)
 COMMONDIR =  $(abspath $(CURDIR)/../../common)
 
 # Path to he arm-none-eabi compiler
-COMPILERPATH = /usr/bin
+DETECTCOMPILER = $(shell command -v arm-none-eabi-gcc 2> /dev/null)
+ifneq ($(strip $(DETECTCOMPILER)),)
+  COMPILERPATH = $(dir $(DETECTCOMPILER))
+  $(info Using compiler found at: $(DETECTCOMPILER))
+else
+  COMPILERPATH = /usr/bin
+endif
 
 # Check whether we have a local config.h. If so, -imacros it first so it can override common/config.h
 ifneq ("$(wildcard $(CURDIR)/config.h)","")
@@ -50,9 +56,9 @@ LDFLAGS += -mcpu=cortex-m4 -T$(LDSCRIPT)
 MCU = mk20dx256
 
 # Different GCC binaries
-CC = $(abspath $(COMPILERPATH))/arm-none-eabi-gcc
-OBJCOPY = $(abspath $(COMPILERPATH))/arm-none-eabi-objcopy
-SIZE = $(abspath $(COMPILERPATH))/arm-none-eabi-size
+CC = $(COMPILERPATH)/arm-none-eabi-gcc
+OBJCOPY = $(COMPILERPATH)/arm-none-eabi-objcopy
+SIZE = $(COMPILERPATH)/arm-none-eabi-size
 
 # cflow options
 CFLOWFLAGS = --cpp='$(CC) $(CFLAGS) -E' --omit-arguments
